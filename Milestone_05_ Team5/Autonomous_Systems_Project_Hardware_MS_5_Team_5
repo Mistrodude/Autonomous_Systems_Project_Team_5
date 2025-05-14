@@ -1,0 +1,82 @@
+#define ENA 10
+#define ENB 11
+#define IN1 8
+#define IN2 9
+#define IN1_LEFT 12
+#define IN2_LEFT 13
+#define IN3 7
+#define IN4 6
+
+String inputBuffer = "";
+int speedValue = 200;
+int driveCommand = 0;
+String steeringCommand = "CENTER";
+
+void setup() {
+Serial.begin(9600);
+pinMode(ENA, OUTPUT); pinMode(ENB, OUTPUT);
+pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+pinMode(IN1_LEFT, OUTPUT); pinMode(IN2_LEFT, OUTPUT);
+pinMode(IN3, OUTPUT); pinMode(IN4, OUTPUT);
+stopDrive();
+centerSteering();
+}
+
+void loop() {
+while (Serial.available()) {
+char c = Serial.read();
+if (c == '\n') {
+processCommand(inputBuffer);
+inputBuffer = "";
+} else {
+inputBuffer += c;
+}
+}
+applyDrive();
+applySteering();
+}
+
+void processCommand(String cmd) {
+cmd.trim();
+if (cmd == "ON") driveCommand = 1;
+else if (cmd == "REVERSE") driveCommand = -1;
+else if (cmd == "OFF") driveCommand = 0;
+else if (cmd.startsWith("SPEED:")) speedValue = constrain(cmd.substring(6).toInt(), 0, 255);
+else if (cmd == "LEFT" || cmd == "RIGHT" || cmd == "CENTER") steeringCommand = cmd;
+}
+
+void applyDrive() {
+analogWrite(ENA, speedValue);
+if (driveCommand == 1) {
+digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+digitalWrite(IN1_LEFT, LOW); digitalWrite(IN2_LEFT, HIGH);
+} else if (driveCommand == -1) {
+digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH);
+digitalWrite(IN1_LEFT, HIGH); digitalWrite(IN2_LEFT, LOW);
+} else {
+stopDrive();
+}
+}
+
+void stopDrive() {
+analogWrite(ENA, 0);
+digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
+digitalWrite(IN1_LEFT, LOW); digitalWrite(IN2_LEFT, LOW);
+}
+
+void applySteering() {
+if (steeringCommand == "RIGHT") {
+analogWrite(ENB, 255);
+digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH);
+} else if (steeringCommand == "LEFT") {
+analogWrite(ENB, 255);
+digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+} else {
+centerSteering();
+}
+}
+
+void centerSteering() {
+analogWrite(ENB, 0);
+digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
+}
